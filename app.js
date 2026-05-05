@@ -35,12 +35,20 @@ function initializeMap() {
   state.map = L.map("map", {
     zoomControl: true,
     minZoom: 6,
+    maxZoom: 18,
   }).setView(MAP_CENTER, DEFAULT_ZOOM);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
     maxZoom: 19,
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  }).addTo(state.map);
+
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19,
+    pane: "overlayPane",
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
   }).addTo(state.map);
 
   state.markerLayer = L.layerGroup().addTo(state.map);
@@ -54,9 +62,30 @@ function renderMarkers() {
       icon: createMarkerIcon(place.status),
       title: place.name,
     });
+    const halo = L.circle([place.lat, place.lng], {
+      radius: 110,
+      stroke: false,
+      fillColor: getMarkerColor(place.status),
+      fillOpacity: 0.16,
+    });
 
-    marker.bindPopup(createPopupContent(place));
+    marker.bindPopup(createPopupContent(place), {
+      offset: [0, -28],
+    });
+    marker.bindTooltip(place.name, {
+      permanent: true,
+      direction: "bottom",
+      offset: [0, 18],
+      className: "place-label",
+    });
+    halo.addTo(state.markerLayer);
     marker.addTo(state.markerLayer);
+
+    if (state.allPlaces.length === 1) {
+      window.setTimeout(() => {
+        marker.openPopup();
+      }, 150);
+    }
   });
 }
 
@@ -68,22 +97,12 @@ function fitMapToPlaces() {
 
   if (state.allPlaces.length === 1) {
     const [place] = state.allPlaces;
-    state.map.setView([place.lat, place.lng], 12);
+    state.map.setView([place.lat, place.lng], 16);
     return;
   }
 
   const bounds = L.latLngBounds(state.allPlaces.map((place) => [place.lat, place.lng]));
   state.map.fitBounds(bounds, { padding: [32, 32] });
-}
-
-function createMarkerIcon(status) {
-  return L.divIcon({
-    className: "",
-    html: `<div class="custom-marker ${escapeHtml(status)}"></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
-    popupAnchor: [0, -10],
-  });
 }
 
 function createPopupContent(place) {
@@ -101,6 +120,31 @@ function createPopupContent(place) {
   const wrapper = document.createElement("div");
   wrapper.appendChild(fragment);
   return wrapper.innerHTML;
+}
+
+function createMarkerIcon(status) {
+  const color = getMarkerColor(status);
+
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="position: relative; width: 38px; height: 50px;">
+        <svg width="38" height="50" viewBox="0 0 38 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M19 1C9.611 1 2 8.611 2 18c0 11.617 13.272 24.315 16.117 26.923a1.3 1.3 0 0 0 1.766 0C22.728 42.315 36 29.617 36 18 36 8.611 28.389 1 19 1Z" fill="${color}" stroke="#FFFFFF" stroke-width="2.5"/>
+          <circle cx="19" cy="18" r="6.5" fill="#FFF9F1"/>
+        </svg>
+        <div style="position:absolute; left:50%; top:36px; width:20px; height:8px; transform:translateX(-50%); background:rgba(38,24,12,0.18); filter:blur(6px); border-radius:999px;"></div>
+      </div>
+    `,
+    iconSize: [38, 50],
+    iconAnchor: [19, 46],
+    popupAnchor: [0, -36],
+    tooltipAnchor: [0, 8],
+  });
+}
+
+function getMarkerColor(status) {
+  return status === "visited" ? "#205c4d" : "#bb7a22";
 }
 
 function renderFallbackPopup(error) {
