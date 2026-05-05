@@ -7,10 +7,6 @@ const state = {
   markerLayer: null,
 };
 
-const elements = {
-  popupTemplate: document.querySelector("#popup-template"),
-};
-
 document.addEventListener("DOMContentLoaded", initialize);
 
 async function initialize() {
@@ -106,20 +102,74 @@ function fitMapToPlaces() {
 }
 
 function createPopupContent(place) {
-  const fragment = elements.popupTemplate.content.cloneNode(true);
-  fragment.querySelector(".popup-title").textContent = place.name;
-  fragment.querySelector(".popup-meta").textContent = [
-    formatStatus(place.status),
-    place.category,
-    `${place.region} · ${place.district}`,
-  ]
+  const meta = [formatStatus(place.status), place.category, `${place.region} · ${place.district}`]
     .filter(Boolean)
     .join(" · ");
-  fragment.querySelector(".popup-note").textContent = place.notes ?? place.address;
+  const tags = (place.tags ?? [])
+    .map((tag) => `<span class="popup-tag">${escapeHtml(tag)}</span>`)
+    .join("");
+  const topMenu = (place.topMenu ?? [])
+    .map((item) => `<span class="popup-tag is-soft">${escapeHtml(item)}</span>`)
+    .join("");
+  const reviewSummary = place.reviews
+    ? `방문자 ${place.reviews.visitor ?? 0} · 블로그 ${place.reviews.blog ?? 0}`
+    : "";
+  const hourSummary =
+    place.hours && place.hours.open && place.hours.close
+      ? `${escapeHtml(place.hours.days ?? "")} ${escapeHtml(place.hours.open)} - ${escapeHtml(
+          place.hours.close
+        )}`.trim()
+      : "";
+  const ratingSummary = place.rating ? `평점 ${escapeHtml(place.rating)}` : "";
+  const stationSummary = place.nearestStation ? escapeHtml(place.nearestStation) : "";
+  const phoneSummary = place.phone ? escapeHtml(place.phone) : "";
+  const homepageLink = place.homepage
+    ? `<a class="popup-link" href="${escapeHtml(place.homepage)}" target="_blank" rel="noreferrer">인스타그램</a>`
+    : "";
+  const sourceLink =
+    place.source?.url && place.source?.name
+      ? `<a class="popup-link" href="${escapeHtml(place.source.url)}" target="_blank" rel="noreferrer">${escapeHtml(
+          place.source.name
+        )}</a>`
+      : "";
 
-  const wrapper = document.createElement("div");
-  wrapper.appendChild(fragment);
-  return wrapper.innerHTML;
+  return `
+    <article class="popup-card">
+      <p class="popup-meta">${meta}</p>
+      <h3 class="popup-title">${escapeHtml(place.name)}</h3>
+      <p class="popup-summary">${escapeHtml(place.summary ?? place.notes ?? "")}</p>
+      <div class="popup-tags">${tags}</div>
+      <div class="popup-info">
+        ${renderPopupRow("주소", place.address)}
+        ${renderPopupRow("영업", hourSummary)}
+        ${renderPopupRow("평점", ratingSummary)}
+        ${renderPopupRow("리뷰", reviewSummary)}
+        ${renderPopupRow("가까운 역", stationSummary)}
+        ${renderPopupRow("전화", phoneSummary)}
+      </div>
+      ${
+        topMenu
+          ? `<div class="popup-section"><p class="popup-label">대표 메뉴</p><div class="popup-tags">${topMenu}</div></div>`
+          : ""
+      }
+      <p class="popup-note">${escapeHtml(place.notes ?? "")}</p>
+      ${
+        homepageLink || sourceLink
+          ? `<div class="popup-actions">${homepageLink}${sourceLink}</div>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderPopupRow(label, value) {
+  if (!value) {
+    return "";
+  }
+
+  return `<div class="popup-row"><span class="popup-row-label">${escapeHtml(
+    label
+  )}</span><span class="popup-row-value">${escapeHtml(value)}</span></div>`;
 }
 
 function createMarkerIcon(status) {
