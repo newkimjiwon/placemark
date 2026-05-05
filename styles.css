@@ -1,0 +1,66 @@
+:root {
+  --text: #2f241b;
+  --muted: #6f5d4f;
+  --visited: #205c4d;
+  --planned: #bb7a22;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "IBM Plex Sans KR", sans-serif;
+  background: #ece7df;
+}
+
+.map-page,
+.map {
+  min-height: 100vh;
+}
+
+.custom-marker {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(31, 16, 8, 0.22);
+}
+
+.custom-marker.visited {
+  background: var(--visited);
+}
+
+.custom-marker.planned {
+  background: var(--planned);
+}
+
+.popup-card {
+  min-width: 220px;
+  color: var(--text);
+}
+
+.popup-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.popup-meta {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.popup-note {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
